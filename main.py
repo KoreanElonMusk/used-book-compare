@@ -12,6 +12,9 @@ import logging
 from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # 각 스크래퍼 모듈 임포트
 from scrapers.aladin import search_aladin

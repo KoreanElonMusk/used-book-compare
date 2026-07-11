@@ -14,8 +14,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import os
+
 # 알라딘 Open API TTBKey
-TTB_KEY = "ttb1chlalsrb0602001"
+TTB_KEY = os.environ.get("ALADIN_TTB_KEY", "")
+if not TTB_KEY:
+    logger.warning("[알라딘] 환경변수 ALADIN_TTB_KEY가 설정되지 않았습니다. .env 파일을 만들거나 배포 환경변수를 설정해주세요.")
 
 # 알라딘 API 엔드포인트
 ALADIN_SEARCH_URL = "http://www.aladin.co.kr/ttb/api/ItemSearch.aspx"

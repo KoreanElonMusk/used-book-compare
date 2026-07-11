@@ -103,10 +103,6 @@ body::before {
   width: 56px;
   height: 56px;
   object-fit: contain;
-  /* 만약 JPG 배경이 까맣게 저장되었다면 투명해지도록 블렌드 모드 적용 (배경이 희다면 밝아짐) */
-  mix-blend-mode: screen; 
-  /* 혹시 배경이 흰색으로 저장되었다면 mix-blend-mode: multiply; 를 써야 하지만, 다크모드이므로 흰색 배경의 이미지를 화면에 넣으면 사각형이 생깁니다.
-     따라서 누끼가 제대로 따졌거나, 검정 배경인 경우 screen이 가장 적합합니다. */
 }
 
 .header__title {

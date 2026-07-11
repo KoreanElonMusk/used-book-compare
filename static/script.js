@@ -78,15 +78,12 @@ function showResults() {
  * 0: 완벽 일치, 1: 제목에 포함, 2: 키워드 분산 포함, 3: 기타
  */
 function calculateAccuracy(title, query) {
-  const t = title.replace(/\s+/g, "").toLowerCase();
-  const q = query.replace(/\s+/g, "").toLowerCase();
+  const t = normalizeTitle(title);
+  const q = normalizeTitle(query);
   
   if (t === q) return 0;
-  if (t.includes(q)) return 1;
-  
-  const keywords = query.toLowerCase().split(/\s+/).filter(k => k);
-  if (keywords.length > 0 && keywords.every(k => title.toLowerCase().includes(k))) return 2;
-  
+  if (t.startsWith(q)) return 1;
+  if (t.includes(q)) return 2;
   return 3;
 }
 
@@ -95,6 +92,12 @@ function normalizeTitle(title) {
   let clean = title.replace(/\[.*?\]|\(.*?\)|<.*?>/g, '');
   // 특수문자 및 공백 제거
   clean = clean.replace(/[^a-zA-Z0-9가-힣]/g, '');
+  return clean.toLowerCase();
+}
+
+function strictNormalizeTitle(title) {
+  // 괄호는 살리고 특수문자/공백만 제거 (더 보수적인 병합)
+  let clean = title.replace(/[^a-zA-Z0-9가-힣\(\)\[\]]/g, '');
   return clean.toLowerCase();
 }
 
@@ -113,6 +116,7 @@ function groupResults(results) {
   results.forEach(item => {
     const itemIsbn = extractIsbn(item.isbn);
     const normalizedTitle = normalizeTitle(item.title);
+    const strictTitle = strictNormalizeTitle(item.title);
     if (!normalizedTitle && !itemIsbn) return; 
 
     let targetGroup = null;
@@ -122,9 +126,9 @@ function groupResults(results) {
       targetGroup = groups.find(g => g.isbn === itemIsbn);
     }
     
-    // 2. ISBN이 없거나 못 찾은 경우, 보수적으로 "정규화된 제목"이 완전히 일치하는 그룹 찾기
-    if (!targetGroup && normalizedTitle) {
-      targetGroup = groups.find(g => g.normalizedTitle === normalizedTitle);
+    // 2. ISBN이 없거나 못 찾은 경우, "엄격하게 정규화된 제목"이 일치하는 그룹 찾기
+    if (!targetGroup && strictTitle) {
+      targetGroup = groups.find(g => strictNormalizeTitle(g.title) === strictTitle);
     }
 
     if (!targetGroup) {
@@ -211,33 +215,79 @@ function renderCards(groups) {
   }
 
   resultsList.innerHTML = groups.map((group, index) => {
-    // 3. 그룹 내에서 가격 오름차순으로 서점 목록 정렬
-    group.stores.sort((a, b) => {
-      if (a.price === 0) return 1;
-      if (b.price === 0) return -1;
-      return a.price - b.price;
+    // 3. 그룹 내 상점들을 플랫폼별로 분류
+    const plats = { '알라딘': [], '예스24': [], '개똥이네': [], '기타': [] };
+    group.stores.forEach(item => {
+      let p = '기타';
+      if(item.store.includes('알라딘')) p = '알라딘';
+      else if(item.store.includes('예스24') || item.store.includes('YES24')) p = '예스24';
+      else if(item.store.includes('개똥이네')) p = '개똥이네';
+      else plats[p] = []; // fallback
+      if(!plats[p]) plats[p] = [];
+      plats[p].push(item);
     });
 
-    const storesHtml = group.stores.map(item => {
-      const isLowest = item.price > 0 && item.price === group.minPrice;
-      const priceText = item.price > 0
-        ? `<span class="price-value ${isLowest ? 'price-value--lowest' : ''}">${formatPrice(item.price)}원</span>`
+    let storesHtml = '';
+    const groupMinPrice = group.minPrice;
+
+    for (const p in plats) {
+      const items = plats[p];
+      if (items.length === 0) continue;
+      
+      items.sort((a, b) => {
+        if (a.price === 0) return 1;
+        if (b.price === 0) return -1;
+        return a.price - b.price;
+      });
+
+      const bestItem = items[0];
+      const isLowest = bestItem.price > 0 && bestItem.price === groupMinPrice;
+      const priceText = bestItem.price > 0
+        ? `<span class="price-value ${isLowest ? 'price-value--lowest' : ''}">${formatPrice(bestItem.price)}원</span>`
         : '<span class="price-value" style="color: var(--text-muted);">가격없음</span>';
-        
-      return `
-        <div class="store-row">
-          <div class="store-row__name">
-            <span class="store-badge ${getStoreBadgeClass(item.store)}">${getStoreIcon(item.store)} ${item.store}</span>
-            <span class="store-row__cond">${item.condition || '중고'}</span>
+
+      storesHtml += `
+        <div class="store-platform-group">
+          <div class="store-row">
+            <div class="store-row__name">
+              <span class="store-badge ${getStoreBadgeClass(bestItem.store)}">${getStoreIcon(bestItem.store)} ${bestItem.store}</span>
+              <span class="store-row__cond">${bestItem.condition || '중고'}</span>
+            </div>
+            <div class="store-row__action">
+              ${isLowest ? '<span class="lowest-badge">🏷️ 최저가</span>' : ''}
+              ${priceText}
+              <a href="${bestItem.link}" target="_blank" rel="noopener noreferrer" class="store-row__btn">바로가기</a>
+            </div>
           </div>
-          <div class="store-row__action">
-            ${isLowest ? '<span class="lowest-badge">🏷️ 최저가</span>' : ''}
-            ${priceText}
-            <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="store-row__btn">바로가기</a>
-          </div>
-        </div>
       `;
-    }).join('');
+
+      if (items.length > 1) {
+        const restItemsHtml = items.slice(1).map(item => `
+          <div class="store-row store-row--sub">
+            <div class="store-row__name">
+              <span class="store-row__cond" style="margin-left:24px; color:var(--text-muted);">└ ${item.condition || '중고'}</span>
+            </div>
+            <div class="store-row__action">
+              <span class="price-value">${formatPrice(item.price)}원</span>
+              <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="store-row__btn store-row__btn--sub">바로가기</a>
+            </div>
+          </div>
+        `).join('');
+
+        const accordionId = `acc_${Math.random().toString(36).substr(2, 9)}`;
+        storesHtml += `
+          <div class="store-accordion">
+            <button type="button" class="store-accordion__toggle" onclick="document.getElementById('${accordionId}').classList.toggle('active'); this.classList.toggle('active')">
+              + ${items.length - 1}개의 매물 더보기 <span class="store-accordion__icon">▼</span>
+            </button>
+            <div id="${accordionId}" class="store-accordion__content">
+              ${restItemsHtml}
+            </div>
+          </div>
+        `;
+      }
+      storesHtml += `</div>`; // end store-platform-group
+    }
 
     const metaParts = [];
     if (group.author) metaParts.push(`<span class="meta-author">${group.author}</span>`);

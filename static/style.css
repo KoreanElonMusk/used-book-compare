@@ -684,3 +684,93 @@ body::before {
     align-items: flex-start;
   }
 }
+
+/* ── 그룹 및 아코디언 (더보기) UI ── */
+.store-platform-group {
+  margin-bottom: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.store-platform-group .store-row {
+  border: none;
+  background: transparent;
+  padding: 8px;
+}
+
+.store-platform-group .store-row:hover {
+  border-color: transparent;
+}
+
+.store-row--sub {
+  border-top: 1px dashed var(--border-subtle) !important;
+  border-radius: 0;
+  margin-top: 4px;
+  padding-top: 12px !important;
+}
+
+.store-row__btn--sub {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+}
+
+.store-row__btn--sub:hover {
+  background: var(--text-muted);
+  color: var(--bg-card);
+}
+
+.store-accordion {
+  border-top: 1px dashed var(--border-subtle);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.store-accordion__toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 6px;
+  width: 100%;
+  text-align: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  outline: none;
+}
+
+.store-accordion__toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.store-accordion__icon {
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
+}
+
+.store-accordion__toggle.active .store-accordion__icon {
+  transform: rotate(180deg);
+}
+
+.store-accordion__content {
+  display: none;
+  margin-top: 8px;
+}
+
+.store-accordion__content.active {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

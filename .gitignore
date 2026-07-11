@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Editor
+.vscode/
+.idea/
+
+# Temp HTML dumps
+*item.html
+*detail.html
+littlemom.html

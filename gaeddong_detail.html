@@ -1,0 +1,6 @@
+Error [select HIGH_PRIORITY a.*,u.d_cost,u.d_cost_limit,u.credit,g.pval_daily,g.tran_avg_daily,g.sales_cnt_daily
+		from nlkb_itemDB a
+		left join users_good_seller_state g on a.pno=g.num,
+		users d
+		left join users_addinfo u on d.num=u.num
+		where d.level!=5 and d.badseller='N' and d.num=a.pno and a.edate>'2026-07-11 09:00:00' and a.holdnum>0 and a.badseller='N' and a.visible='Y' and () group by a.itemID order by length(a.sell_price) asc, a.sell_price asc]
